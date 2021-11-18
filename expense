@@ -2,17 +2,33 @@
 
 require 'pg'
 
-db = PG.connect(dbname: "expense_tracker")
-
-query = 'SELECT * FROM expenses'
-results = db.exec(query)
-
-
-
-results.each do |tuple|
-  id = tuple['id'].rjust(3)
-  amount = tuple['amount'].rjust(12)
-  date = tuple['created_on'].rjust(10)
-  memo = tuple['memo']
-  puts "#{id} | #{date} | #{amount} | #{memo}"
+def help
+  puts "An expense recording system\n\n"
+  puts "Commands:\n\n"
+  puts "add AMOUNT MEMO [DATE] - record a new expense"
+  puts "list - list all expenses"
+  puts "delete NUMBER - remove expense with id NUMBER"
+  puts "search QUERY - list expenses with a matching memo field"
 end
+
+
+def list_expenses(db)
+  expenses = db.exec('SELECT * FROM expenses')
+
+  expenses.each do |tuple|
+    id = tuple['id'].rjust(3)
+    amount = tuple['amount'].rjust(12)
+    date = tuple['created_on'].rjust(10)
+    memo = tuple['memo']
+
+    puts "#{id} | #{date} | #{amount} | #{memo}"
+  end
+end
+
+database = PG.connect(dbname: "expense_tracker")
+
+help
+
+list_expenses(database)
+
+
