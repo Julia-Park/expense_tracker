@@ -3,7 +3,7 @@
 require 'pg'
 require 'yaml'
 
-def help
+def display_help
   commands = YAML.load(File.read('./commands.yml'))
   puts "An expense recording system\n\nCommands:\n\n"
 
@@ -14,9 +14,8 @@ def help
   end
 end
 
-
 def list_expenses(db)
-  expenses = db.exec('SELECT * FROM expenses')
+  expenses = db.exec('SELECT * FROM expenses;')
 
   expenses.each do |tuple|
     id = tuple['id'].rjust(3)
@@ -28,10 +27,23 @@ def list_expenses(db)
   end
 end
 
+def add_expense(db, amount, memo)
+  if amount.nil? || memo.nil?
+    puts 'You must provide an amount and memo.'
+    return
+  elsif !amount.match?(/^\d{0,4}(\.\d{0,2})?$/)
+    puts 'Enter a valid amount.'
+    return
+  end
+
+  db.exec("INSERT INTO expenses (amount, memo) VALUES (#{amount}, '#{memo}');")
+end
+
 database = PG.connect(dbname: "expense_tracker")
+commands = ARGV
 
-help
-
-list_expenses(database)
-
-
+case commands.first
+when 'list' then list_expenses(database)
+when 'add' then add_expense(database, commands[1], commands[2])
+else display_help
+end
