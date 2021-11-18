@@ -30,16 +30,17 @@ def list_expenses
 end
 
 def add_expense(amount, memo)
-  if amount.nil? || memo.nil?
-    puts 'You must provide an amount and memo.'
-    return
+  error = if amount.nil? || memo.nil?
+    'You must provide an amount and memo.'
   elsif !amount.match?(/^\d{0,4}(\.\d{0,2})?$/)
-    puts 'Enter a valid amount.'
-    return
+    abort 'Enter a valid amount.'
   end
 
-  CONNECTION.exec(
-    "INSERT INTO expenses (amount, memo) VALUES (#{amount}, '#{memo.gsub("'", "''")}');"
+  abort error if error
+
+  CONNECTION.exec_params(
+    "INSERT INTO expenses (amount, memo) VALUES ($1, $2);",
+    [amount, memo]
   )
 end
 
