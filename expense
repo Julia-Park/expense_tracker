@@ -1,14 +1,17 @@
 #! /usr/bin/env ruby
 
 require 'pg'
+require 'yaml'
 
 def help
-  puts "An expense recording system\n\n"
-  puts "Commands:\n\n"
-  puts "add AMOUNT MEMO [DATE] - record a new expense"
-  puts "list - list all expenses"
-  puts "delete NUMBER - remove expense with id NUMBER"
-  puts "search QUERY - list expenses with a matching memo field"
+  commands = YAML.load(File.read('./commands.yml'))
+  puts "An expense recording system\n\nCommands:\n\n"
+
+  length = commands.keys.max { |a, b| a.length <=> b.length }.length
+
+  commands.each do |command, desc|
+    puts "#{command.ljust(length)} : #{desc}"
+  end
 end
 
 
