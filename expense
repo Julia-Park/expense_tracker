@@ -39,7 +39,7 @@ def add_expense(amount, memo)
   end
 
   CONNECTION.exec(
-    "INSERT INTO expenses (amount, memo) VALUES (#{amount}, '#{memo}');"
+    "INSERT INTO expenses (amount, memo) VALUES (#{amount}, '#{memo.gsub("'", "''")}');"
   )
 end
 
