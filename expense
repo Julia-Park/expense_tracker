@@ -3,6 +3,8 @@
 require 'pg'
 require 'yaml'
 
+CONNECTION = PG.connect(dbname: "expense_tracker")
+
 def display_help
   commands = YAML.load(File.read('./commands.yml'))
   puts "An expense recording system\n\nCommands:\n\n"
@@ -14,8 +16,8 @@ def display_help
   end
 end
 
-def list_expenses(db)
-  expenses = db.exec('SELECT * FROM expenses;')
+def list_expenses
+  expenses = CONNECTION.exec('SELECT * FROM expenses;')
 
   expenses.each do |tuple|
     id = tuple['id'].rjust(3)
@@ -27,7 +29,7 @@ def list_expenses(db)
   end
 end
 
-def add_expense(db, amount, memo)
+def add_expense(amount, memo)
   if amount.nil? || memo.nil?
     puts 'You must provide an amount and memo.'
     return
@@ -36,14 +38,15 @@ def add_expense(db, amount, memo)
     return
   end
 
-  db.exec("INSERT INTO expenses (amount, memo) VALUES (#{amount}, '#{memo}');")
+  CONNECTION.exec(
+    "INSERT INTO expenses (amount, memo) VALUES (#{amount}, '#{memo}');"
+  )
 end
 
-database = PG.connect(dbname: "expense_tracker")
 commands = ARGV
 
 case commands.first
-when 'list' then list_expenses(database)
-when 'add' then add_expense(database, commands[1], commands[2])
-else display_help
+when 'list' then list_expenses
+when 'add'  then add_expense(commands[1], commands[2])
+else        display_help
 end
