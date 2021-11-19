@@ -8,17 +8,9 @@ class ExpenseData
     @connection = PG.connect(dbname: db)
   end
 
-  def list
-    expenses = @connection.exec('SELECT * FROM expenses;')
-  
-    expenses.each do |tuple|
-      id = tuple['id'].rjust(3)
-      amount = tuple['amount'].rjust(12)
-      date = tuple['created_on'].rjust(10)
-      memo = tuple['memo']
-  
-      puts "#{id} | #{date} | #{amount} | #{memo}"
-    end
+  def list(query=nil, params=nil)
+    result = @connection.exec('SELECT * FROM expenses;')
+    display_expenses(result)
   end
   
   def add(amount, memo, date=nil)
@@ -43,6 +35,30 @@ class ExpenseData
       params
     )
   end
+
+  def search(term)
+    abort 'Enter a term to search.' if term.nil?
+
+    result = @connection.exec_params(
+      'SELECT * FROM expenses WHERE memo ILIKE $1;',
+      ["%#{term}%"]
+    )
+
+    display_expenses(result)
+  end
+
+  private
+
+  def display_expenses(result)
+    result.each do |tuple|
+      id = tuple['id'].rjust(3)
+      amount = tuple['amount'].rjust(12)
+      date = tuple['created_on'].rjust(10)
+      memo = tuple['memo']
+  
+      puts "#{id} | #{date} | #{amount} | #{memo}"
+    end
+  end
 end
 
 class CLI
@@ -52,9 +68,10 @@ class CLI
 
   def run(args)
     case args.first
-    when 'list' then @application.list
-    when 'add'  then @application.add(args[1], args[2], args[3])
-    else        display_help
+    when 'list'   then @application.list
+    when 'add'    then @application.add(args[1], args[2], args[3])
+    when 'search' then @application.search(args[1])
+    else          display_help
     end
   end
 
