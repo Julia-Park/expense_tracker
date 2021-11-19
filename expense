@@ -17,7 +17,9 @@ class ExpenseData
     error = if amount.nil? || memo.nil?
       'You must provide an amount and memo.'
     elsif !amount.match?(/^\d{0,4}(\.\d{0,2})?$/)
-      abort 'Enter a valid amount.'
+      'Enter a valid amount.'
+    elsif !date.nil? && !valid_date?(date)
+      'Entered date is invalid.'
     end
   
     abort error if error
@@ -26,7 +28,7 @@ class ExpenseData
       sql = [', created_on', ', $3']
       params = [amount, memo, Date.parse(date)]
     else
-      sql = ['', '']
+      sql = []
       params = [amount, memo]
     end
 
@@ -57,6 +59,15 @@ class ExpenseData
       memo = tuple['memo']
   
       puts "#{id} | #{date} | #{amount} | #{memo}"
+    end
+  end
+
+  def valid_date?(string)
+    begin
+      Date.parse(string)
+      true
+    rescue Date::Error
+      false
     end
   end
 end
