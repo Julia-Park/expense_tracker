@@ -3,51 +3,65 @@
 require 'pg'
 require 'yaml'
 
-CONNECTION = PG.connect(dbname: "expense_tracker")
+class ExpenseData
+  def initialize(db='expense_tracker')
+    @connection = PG.connect(dbname: db)
+  end
 
-def display_help
-  commands = YAML.load(File.read('./commands.yml'))
-  puts "An expense recording system\n\nCommands:\n\n"
-
-  length = commands.keys.max { |a, b| a.length <=> b.length }.length
-
-  commands.each do |command, desc|
-    puts "#{command.ljust(length)} : #{desc}"
+  def list
+    expenses = @connection.exec('SELECT * FROM expenses;')
+  
+    expenses.each do |tuple|
+      id = tuple['id'].rjust(3)
+      amount = tuple['amount'].rjust(12)
+      date = tuple['created_on'].rjust(10)
+      memo = tuple['memo']
+  
+      puts "#{id} | #{date} | #{amount} | #{memo}"
+    end
+  end
+  
+  def add(amount, memo)
+    error = if amount.nil? || memo.nil?
+      'You must provide an amount and memo.'
+    elsif !amount.match?(/^\d{0,4}(\.\d{0,2})?$/)
+      abort 'Enter a valid amount.'
+    end
+  
+    abort error if error
+  
+    @connection.exec_params(
+      "INSERT INTO expenses (amount, memo) VALUES ($1, $2);",
+      [amount, memo]
+    )
   end
 end
 
-def list_expenses
-  expenses = CONNECTION.exec('SELECT * FROM expenses;')
+class CLI
+  def initialize
+    @application = ExpenseData.new
+  end
 
-  expenses.each do |tuple|
-    id = tuple['id'].rjust(3)
-    amount = tuple['amount'].rjust(12)
-    date = tuple['created_on'].rjust(10)
-    memo = tuple['memo']
+  def run(args)
+    case args.first
+    when 'list' then @application.list
+    when 'add'  then @application.add(args[1], args[2])
+    else        display_help
+    end
+  end
 
-    puts "#{id} | #{date} | #{amount} | #{memo}"
+  private
+
+  def display_help
+    commands = YAML.load(File.read('./commands.yml'))
+    puts "An expense recording system\n\nCommands:\n\n"
+  
+    length = commands.keys.max { |a, b| a.length <=> b.length }.length
+  
+    commands.each do |command, desc|
+      puts "#{command.ljust(length)} : #{desc}"
+    end
   end
 end
 
-def add_expense(amount, memo)
-  error = if amount.nil? || memo.nil?
-    'You must provide an amount and memo.'
-  elsif !amount.match?(/^\d{0,4}(\.\d{0,2})?$/)
-    abort 'Enter a valid amount.'
-  end
-
-  abort error if error
-
-  CONNECTION.exec_params(
-    "INSERT INTO expenses (amount, memo) VALUES ($1, $2);",
-    [amount, memo]
-  )
-end
-
-commands = ARGV
-
-case commands.first
-when 'list' then list_expenses
-when 'add'  then add_expense(commands[1], commands[2])
-else        display_help
-end
+CLI.new.run(ARGV)
