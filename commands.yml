@@ -2,3 +2,4 @@ add AMOUNT MEMO [DATE]: record a new expense
 list: list all expenses
 delete NUMBER: remove expense with id NUMBER
 search QUERY: list expenses with a matching memo field
+clear: deletes all expenses; must confirm to continue

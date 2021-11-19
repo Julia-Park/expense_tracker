@@ -2,6 +2,7 @@
 
 require 'pg'
 require 'yaml'
+require 'io/console'
 
 class ExpenseData
   def initialize(db='expense_tracker')
@@ -9,8 +10,9 @@ class ExpenseData
   end
 
   def list(query=nil, params=nil)
-    result = @connection.exec('SELECT * FROM expenses;')
-    display_expenses(result)
+    results = @connection.exec('SELECT * FROM expenses;')
+
+    display_expenses(results)
   end
   
   def add(amount, memo, date=nil)
@@ -66,16 +68,43 @@ class ExpenseData
     end
   end
 
+  def clear_all_expenses
+    puts 'This will remove all expenses.  Are you sure? (y/n)'
+    ans = STDIN.getch.chomp
+
+    if ans == 'y'
+      @connection.exec('DELETE FROM expenses;')
+      puts 'All expenses have been deleted.'
+    end
+  end
+
   private
 
   def display_expenses(result)
-    result.each do |tuple|
-      id = tuple['id'].rjust(3)
-      amount = tuple['amount'].rjust(12)
-      date = tuple['created_on'].rjust(10)
-      memo = tuple['memo']
-  
-      puts "#{id} | #{date} | #{amount} | #{memo}"
+    num_results = result.ntuples
+
+    if num_results == 0
+      puts 'There are no expenses.'
+    else
+      puts "There are #{num_results} expenses."
+
+      total = 0
+      max_memo = 0
+
+      result.each do |tuple|
+        id = tuple['id'].rjust(3)
+        amount = tuple['amount'].rjust(12)
+        date = tuple['created_on'].rjust(10)
+        memo = tuple['memo']
+
+        max_memo = memo.length if memo.length > max_memo
+        total += amount.to_f
+    
+        puts "#{id} | #{date} | #{amount} | #{memo}"
+      end
+
+      puts '-' * (3 + 12 + 10 + 10 + max_memo)
+      puts 'Total' + format('%.2f',total).rjust(26)
     end
   end
 
@@ -100,6 +129,7 @@ class CLI
     when 'add'    then @application.add(args[1], args[2], args[3])
     when 'search' then @application.search(args[1])
     when 'delete' then @application.delete(args[1])
+    when 'clear'  then @application.clear_all_expenses
     else          display_help
     end
   end
