@@ -11,8 +11,8 @@ class ExpenseData
 
   def list(query=nil, params=nil)
     results = @connection.exec('SELECT * FROM expenses;')
-
-    display_expenses(results)
+    display_count(results)
+    display_expenses(results) if results.ntuples > 0
   end
   
   def add(amount, memo, date=nil)
@@ -48,7 +48,8 @@ class ExpenseData
       ["%#{term}%"]
     )
 
-    display_expenses(result)
+    display_count(result)
+    display_expenses(result) if result.ntuples > 0
   end
 
   def delete(id)
@@ -80,32 +81,34 @@ class ExpenseData
 
   private
 
-  def display_expenses(result)
+  def display_count(result)
     num_results = result.ntuples
 
     if num_results == 0
       puts 'There are no expenses.'
     else
       puts "There are #{num_results} expenses."
-
-      total = 0
-      max_memo = 0
-
-      result.each do |tuple|
-        id = tuple['id'].rjust(3)
-        amount = tuple['amount'].rjust(12)
-        date = tuple['created_on'].rjust(10)
-        memo = tuple['memo']
-
-        max_memo = memo.length if memo.length > max_memo
-        total += amount.to_f
-    
-        puts "#{id} | #{date} | #{amount} | #{memo}"
-      end
-
-      puts '-' * (3 + 12 + 10 + 10 + max_memo)
-      puts 'Total' + format('%.2f',total).rjust(26)
     end
+  end
+
+  def display_expenses(result)
+    total = 0
+    max_memo = 0
+
+    result.each do |tuple|
+      id = tuple['id'].rjust(3)
+      amount = tuple['amount'].rjust(12)
+      date = tuple['created_on'].rjust(10)
+      memo = tuple['memo']
+
+      max_memo = memo.length if memo.length > max_memo
+      total += amount.to_f
+  
+      puts "#{id} | #{date} | #{amount} | #{memo}"
+    end
+
+    puts '-' * (3 + 12 + 10 + 10 + max_memo)
+    puts 'Total' + format('%.2f',total).rjust(26)
   end
 
   def valid_date?(string)
